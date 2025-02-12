@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Briefumschläge – Vergangenheit, Gegenwart, Zukunft</title>
+  <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@1,700&display=swap" rel="stylesheet">
+
+  <style>
+    /* Grundstil für den Body */
+    body {
+      background-color: #ffe6f0; /* Leicht rosa Hintergrund */
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    /* Überschrift */
+    h1 {
+      margin-bottom: 20px;
+    }
+    /* Container für die Umschläge */
+    .envelopes {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      max-width: 600px;
+    }
+    /* Stil für jeden Umschlag */
+    .envelope {
+      cursor: pointer;
+      text-align: center;
+    }
+    /* Stil für das Emoji */
+    .envelope-emoji {
+      font-size: 64px;
+      transition: transform 0.3s;
+      display: inline-block;
+    }
+    .envelope:hover .envelope-emoji {
+      transform: scale(1.1);
+    }
+    /* Beschriftung unter dem Emoji */
+    .envelope span.label {
+      display: block;
+      margin-top: 5px;
+      font-weight: bold;
+    }
+    /* Overlay für den geöffneten Brief */
+    .letter-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0, 0, 0, 0.5);
+      display: none; /* Standardmäßig nicht sichtbar */
+      align-items: center;
+      justify-content: center;
+    }
+    .letter-content {
+      background-color: #fff;
+      padding: 20px;
+      border-radius: 8px;
+      max-width: 90%;
+      max-height: 80%;
+      overflow-y: auto;
+      position: relative;
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+    }
+    /* Kleiner "X"-Knopf in der rechten oberen Ecke */
+    .close-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      background: none;
+      border: none;
+      font-size: 24px;
+      line-height: 1;
+      color: #333;
+      cursor: pointer;
+    }
+    /* Brieftext mit Garamond-Stil */
+    #letterText {
+      font-family: 'EB Garamond', serif;
+      font-weight: 700; /* Bold */
+      font-style: italic;
+      font-size: 22px;
+      line-height: 1.6;
+      text-align: justify;
+    }
+
+  
+
+
+  </style>
+</head>
+<body>
+  <h1>Wähle einen Briefumschlag</h1>
+  <div class="envelopes">
+    <!-- Umschlag für die Vergangenheit -->
+    <div class="envelope" onclick="openLetter('vergangenheit')">
+      <span class="envelope-emoji">✉️</span>
+      <span class="label">Vergangenheit</span>
+    </div>
+    <!-- Umschlag für die Gegenwart -->
+    <div class="envelope" onclick="openLetter('gegenwart')">
+      <span class="envelope-emoji">✉️</span>
+      <span class="label">Gegenwart</span>
+    </div>
+    <!-- Umschlag für die Zukunft -->
+    <div class="envelope" onclick="openLetter('zukunft')">
+      <span class="envelope-emoji">✉️</span>
+      <span class="label">Zukunft</span>
+    </div>
+    <!-- Geheimer Brief (initial versteckt) -->
+    <div class="envelope" id="secretEnvelope" onclick="openLetter('secret')" style="display: none;">
+      <span class="envelope-emoji">✉️</span>
+      <span class="label">Geheimer Brief</span>
+    </div>
+  </div>
+
+  
+  <!-- Overlay für den geöffneten Brief -->
+  <div class="letter-overlay" id="letterOverlay">
+    <div class="letter-content" id="letterContent">
+      <!-- Kleiner "X"-Schließen-Knopf -->
+      <button class="close-btn" onclick="closeLetter()">X</button>
+      <div id="letterText">
+        <!-- Hier wird der Brieftext (oder das Video) dynamisch eingefügt -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Audio-Elemente -->
+  <!-- Hintergrundmusik (autoplay & loop) -->
+  <audio id="bgMusic" src="background.mp3" autoplay loop></audio>
+  <!-- Soundeffekt beim Öffnen -->
+  <audio id="openSound" src="Sounds/open-sound.mp3"></audio>
+  <!-- Soundeffekt beim Schließen -->
+  <audio id="closeSound" src="Sounds/close-sound.mp3"></audio>
+
+  <script>
+    /* Brieftexte für die drei Zeiträume */
+    const letters = {
+      vergangenheit: "Dies ist der Brief der Vergangenheit. Hier kannst du Erinnerungen und alte Geschichten lesen. \nIch teste einfach mal die Limits dieser Website und wie genau der Zeilenumbruch funktioniert.",
+      gegenwart: "Dies ist der Brief der Gegenwart. Hier findest du Gedanken und Erlebnisse aus der aktuellen Zeit.",
+      zukunft: "Dies ist der Brief der Zukunft. Hier kannst du Visionen und Hoffnungen für das, was noch kommt, entdecken."
+    };
+
+    // Objekt zur Verfolgung, ob die einzelnen Briefe bereits geöffnet wurden
+    let openedLetters = {
+      vergangenheit: false,
+      gegenwart: false,
+      zukunft: false
+    };
+
+    /**
+     * Öffnet den Brief, der dem übergebenen Schlüssel entspricht.
+     * Spielt den passenden Soundeffekt ab und blendet das Overlay ein.
+     * Falls der geheime Brief geöffnet wird, wird das YouTube-Video eingebettet.
+     * @param {string} letterKey - 'vergangenheit', 'gegenwart', 'zukunft' oder 'secret'
+     */
+    function openLetter(letterKey) {
+      // Spiele den Soundeffekt für das Öffnen
+      document.getElementById('openSound').play();
+
+      // Falls es nicht der geheime Brief ist, als geöffnet markieren
+      if (letterKey !== 'secret') {
+        openedLetters[letterKey] = true;
+      }
+
+      // Überprüfe, ob alle drei normalen Briefe bereits geöffnet wurden
+      if (openedLetters.vergangenheit && openedLetters.gegenwart && openedLetters.zukunft) {
+        // Zeige den geheimen Umschlag an
+        document.getElementById('secretEnvelope').style.display = 'inline-block';
+      }
+
+      const letterTextEl = document.getElementById('letterText');
+
+      if (letterKey === 'secret') {
+        // Statt Text, YouTube-Video einbetten (Rickroll)
+        letterTextEl.innerHTML = '<iframe width="560" height="315" src="https://www.youtube.com/embed/dQw4w9WgXcQ?autoplay=1" frameborder="0" allow="accelerometer; autoplay; encrypted-media; gyroscope; picture-in-picture" allowfullscreen></iframe>';
+      } else {
+        // Andernfalls den passenden Brieftext anzeigen
+        letterTextEl.innerText = letters[letterKey] || "Kein Text vorhanden.";
+      }
+
+      // Blende das Overlay ein
+      document.getElementById('letterOverlay').style.display = 'flex';
+    }
+
+    /**
+     * Schließt das geöffnete Brief-Overlay.
+     * Spielt den passenden Soundeffekt ab.
+     */
+    function closeLetter() {
+      // Spiele den Soundeffekt für das Schließen
+      document.getElementById('closeSound').play();
+      // Verberge das Overlay
+      document.getElementById('letterOverlay').style.display = 'none';
+      // Optional: Leere den Inhalt, damit beim erneuten Öffnen ggf. das Video nicht weiterläuft
+      document.getElementById('letterText').innerHTML = '';
+    }
+  </script>
+</body>
+</html>
